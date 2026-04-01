@@ -1,80 +1,145 @@
 # PawPal+ System Design
 
-## Class Diagram
+## Updated Class Diagram (Final Implementation)
 
 ```mermaid
 classDiagram
     class Pet {
         - name: str
         - species: str
+        - tasks: List[Task]
         + get_summary() str
-    }
-
-    class Owner {
-        - name: str
-        - daily_time_limit: int
-        + update_time_constraint(minutes: int) void
-        + get_available_time() int
     }
 
     class Task {
         - name: str
         - duration_minutes: int
         - priority_level: str
-        + is_high_priority() bool
+        - frequency: str
+        - is_completed: bool
+        - is_recurring: bool
+        - start_time: str
+        - due_date: str
         + get_priority_rank() int
+        + mark_complete() void
+        + create_next_occurrence() Task
+    }
+
+    class Owner {
+        - name: str
+        - daily_time_limit: int
+        - pets: List[Pet]
+        + update_time_constraint(minutes: int) void
+        + get_available_time() int
+        + get_all_tasks() List[Task]
     }
 
     class Scheduler {
-        - tasks: List~Task~
-        - pet: Pet
         - owner: Owner
-        + add_task(task: Task) void
-        + sort_tasks_by_priority() List~Task~
-        + check_time_fit(tasks: List~Task~) bool
-        + generate_schedule() Schedule
+        + add_task(pet: Pet, task: Task) bool
+        + filter_tasks(...) List[Task]
+        + sort_by_time() List[Task]
+        + sort_tasks_by_priority() List[Task]
+        + detect_conflicts_for_pet(pet: Pet) list
+        + detect_all_conflicts() dict
+        + generate_schedule() dict
+        + mark_task_complete_with_recurrence(pet: Pet, task: Task) Task
     }
 
-    Owner --> Pet : "owns/has many"
-    Scheduler --> Pet : "plans for"
-    Scheduler --> Owner : "respects constraints"
-    Scheduler --> Task : "organizes many"
+    Owner --> Pet : "has many"
+    Pet --> Task : "contains many"
+    Scheduler --> Owner : "orchestrates for"
 ```
 
-## Class Descriptions
+## Key Changes from Phase 1 to Final Implementation
 
-### 1. **Pet Class**
-- **Purpose**: Represents the pet being cared for
-- **Data**: Stores the pet's name and species
-- **Behavior**: Provides a summary of the pet's identity for use in the schedule
+### ✅ **What Was Added:**
 
-### 2. **Owner Class**
-- **Purpose**: Represents the pet owner and their constraints
-- **Data**: Stores owner's name and daily time available for pet care
-- **Behavior**: Manages and updates the time constraints that limit what can be scheduled
+#### **Task Class Enhancements:**
+- ➕ `frequency` attribute (daily, weekly, once)
+- ➕ `is_recurring` flag for repeating tasks
+- ➕ `start_time` for scheduling conflicts (HH:MM format)
+- ➕ `due_date` for deadline tracking (YYYY-MM-DD format)
+- ➕ `is_completed` status tracking
+- ➕ `create_next_occurrence()` method with timedelta-based date arithmetic
+- ➕ `mark_complete()` method
 
-### 3. **Task Class**
-- **Purpose**: Represents individual pet care activities
-- **Data**: Stores task name, duration (in minutes), and priority level
-- **Behavior**: Identifies high-priority "must-do" tasks to help the scheduler prioritize
+#### **Owner Class Enhancements:**
+- ➕ `pets` list (manages multiple pets, not just one)
+- ➕ `get_all_tasks()` method to aggregate tasks across all pets
 
-### 4. **Scheduler Class** ⭐ (The Brain)
-- **Purpose**: Orchestrates the scheduling logic
-- **Data**: Maintains a list of tasks and references to the pet and owner
-- **Behavior**:
-  - Sorts tasks by priority
-  - Validates that selected tasks fit within the owner's time limit
-  - Generates the final ordered daily plan
+#### **Pet Class Enhancements:**
+- ➕ `tasks` list (directly stores tasks instead of Scheduler managing them)
 
-## Relationships
+#### **Scheduler Class - Major Expansion:**
 
-- **Scheduler → Pet**: Uses pet information in the output schedule
-- **Scheduler → Owner**: Respects owner's time constraints when planning
-- **Scheduler → Task**: Organizes and prioritizes multiple tasks
+**Filtering Methods (NEW):**
+- `filter_tasks()` - Multi-criteria filtering (pet name, completion, priority)
+- `get_tasks_by_pet_name()`, `get_tasks_by_completion_status()`, `get_recurring_tasks()`
+- `get_incomplete_tasks()`, `get_completed_tasks()`
 
-## Key Design Principles
+**Sorting Methods (EXPANDED):**
+- `sort_by_time()` - Chronological sorting by start_time
+- `sort_tasks_by_priority()` - Weighted Greedy (priority + duration)
+- `sort_tasks_by_start_time_then_priority()` - Multi-level sorting
 
-✅ **Separation of Concerns**: Each class has one job  
-✅ **Single Responsibility**: Pet stores pet info, Task stores task info, Scheduler coordinates  
-✅ **Constraint Validation**: Scheduler ensures tasks fit within owner's time limit  
-✅ **Priority-Based Planning**: High-priority tasks take precedence in scheduling
+**Conflict Detection Methods (NEW):**
+- `detect_conflicts_for_pet()` - O(k²) same-pet detection
+- `detect_all_conflicts()` - O(p × k² + n²) comprehensive detection
+- `check_task_conflict_on_add()` - Lightweight conflict checking
+- `get_conflicts_as_string()` - Human-readable reports
+- `_check_time_overlap()` - O(1) interval overlap formula
+
+**Advanced Methods (NEW):**
+- `mark_task_complete_with_recurrence()` - Auto-generates next occurrences
+- `get_schedule_with_conflict_warnings()` - Schedule + warnings
+- `get_time_conflicts_for_pet_soft()` - Soft warnings
+- `_time_to_minutes()` - Time parsing helper
+
+### ❌ **What Was Removed/Changed:**
+
+1. **Scheduler.tasks** ❌ → Removed (tasks now owned by Pets, accessed via Owner)
+2. **Scheduler.pet** ❌ → Removed (now handles multiple pets via Owner)
+3. **Task.is_high_priority()** ❌ → Removed (use `get_priority_rank() == 3` instead)
+4. **Scheduler.check_time_fit()** → Simplified (integrated into generate_schedule)
+
+## Relationship Diagram
+
+```
+Owner (manages constraints)
+  ├─→ Pet 1
+  │    ├─→ Task 1 (HIGH, 09:00, "Morning walk")
+  │    ├─→ Task 2 (MEDIUM, 14:00, "Playtime")
+  │    └─→ Task 3 (LOW, 18:00, "Grooming")
+  │
+  ├─→ Pet 2
+  │    ├─→ Task 4 (HIGH, 08:00, "Feeding")
+  │    └─→ Task 5 (MEDIUM, 12:00, "Training")
+  │
+  └─→ Scheduler (orchestrates)
+       ├─ Filters (by pet, priority, status)
+       ├─ Sorts (by priority, time)
+       ├─ Detects conflicts
+       └─ Generates optimal daily schedule
+```
+
+## Algorithm Summary
+
+| Algorithm | Type | Time | Purpose |
+|-----------|------|------|---------|
+| **Weighted Greedy Sort** | Sorting | O(n log n) | Maximize task completion |
+| **Interval Overlap Detection** | Detection | O(1) | Check time conflicts |
+| **Conflict Detection (same-pet)** | Graph | O(k²) | Find task overlaps per pet |
+| **Conflict Detection (all)** | Graph | O(p × k² + n²) | Find all conflicts |
+| **Recurring Task Generator** | Arithmetic | O(1) | Calculate next due date |
+| **Multi-Criteria Filter** | Search | O(n) | Find tasks by criteria |
+| **Schedule Generation** | Greedy | O(n log n) | Create optimal daily plan |
+
+## Design Principles
+
+✅ **Separation of Concerns**: Pet owns tasks, Owner owns pets, Scheduler orchestrates  
+✅ **Rich Domain Model**: Task has all scheduling attributes (time, date, priority, recurrence)  
+✅ **Multi-Pet Support**: Handles multiple pets and conflict detection across them  
+✅ **Algorithmic Depth**: O(1) overlap checks power O(n) scheduling decisions  
+✅ **Extensible Filtering**: Universal filter for any combination of criteria  
+✅ **Recurring Task Automation**: Auto-generates next occurrences with timedelta arithmetic

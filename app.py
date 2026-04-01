@@ -1,177 +1,20 @@
-# import streamlit as st
-# from pawpal_system import Owner, Pet, Task, Scheduler
-
-# st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
-
-# st.title("🐾 PawPal+")
-
-# # Initialize session_state for Owner (persists across app reruns)
-# if "owner" not in st.session_state:
-#     st.session_state.owner = None
-
-# st.markdown(
-#     """
-# Welcome to the PawPal+ starter app.
-
-# This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-# but **it does not implement the project logic**. Your job is to design the system and build it.
-
-# Use this app as your interactive demo once your backend classes/functions exist.
-# """
-# )
-
-# with st.expander("Scenario", expanded=True):
-#     st.markdown(
-#         """
-# **PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
-# for their pet(s) based on constraints like time, priority, and preferences.
-
-# You will design and implement the scheduling logic and connect it to this Streamlit UI.
-# """
-#     )
-
-# with st.expander("What you need to build", expanded=True):
-#     st.markdown(
-#         """
-# At minimum, your system should:
-# - Represent pet care tasks (what needs to happen, how long it takes, priority)
-# - Represent the pet and the owner (basic info and preferences)
-# - Build a plan/schedule for a day that chooses and orders tasks based on constraints
-# - Explain the plan (why each task was chosen and when it happens)
-# """
-#     )
-
-# st.divider()
-
-# st.subheader("Quick Demo Inputs (UI only)")
-# owner_name = st.text_input("Owner name", value="Bhanu")
-# daily_time_limit = st.slider("Daily time available (minutes)", min_value=30, max_value=480, value=120)
-# # UI for Pet Details
-# pet_name = st.text_input("Pet name", value="Mochi")
-# species = st.selectbox("Species", ["dog", "cat", "other"])
-
-# if st.button("Register Pet to Owner"):
-#     if st.session_state.owner:
-#         # 1. Instantiate the Pet class
-#         new_pet = Pet(name=pet_name, species=species)
-        
-#         # 2. Use the Owner's list to store it
-#         st.session_state.owner.pets.append(new_pet)
-        
-#         st.success(f"✅ {pet_name} has been added to {st.session_state.owner.name}'s profile!")
-#     else:
-#         st.error("Please create an Owner first!")
-
-# # Create or update Owner in session_state
-# if st.button("Create/Update Owner"):
-#     st.session_state.owner = Owner(name=owner_name, daily_time_limit=daily_time_limit)
-#     st.success(f"✅ Owner '{owner_name}' created with {daily_time_limit} minutes available!")
-
-# # Show current Owner
-# if st.session_state.owner:
-#     st.info(f"📋 Current Owner: **{st.session_state.owner.name}** | Available: {st.session_state.owner.get_available_time()} min")
-# else:
-#     st.warning("⚠️ No owner yet. Create one above!")
-
-# st.markdown("### Tasks")
-# st.caption("Add a few tasks. In your final version, these should feed into your scheduler.")
-
-# if "tasks" not in st.session_state:
-#     st.session_state.tasks = []
-
-# col1, col2, col3 = st.columns(3)
-# with col1:
-#     task_title = st.text_input("Task title", value="Morning walk")
-# with col2:
-#     duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
-# with col3:
-#     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
-
-
-# if st.button("Add task"):
-#     if st.session_state.owner.pets:
-#         # 1. Get the current pet (we'll grab the first one for this demo)
-#         target_pet = st.session_state.owner.pets[0]
-        
-#         # 2. Create the Task object
-#         new_task = Task(name=task_title, duration_minutes=int(duration), priority_level=priority)
-        
-#         # 3. Use the Scheduler method you wrote in Phase 2
-#         st.session_state.scheduler.add_task(target_pet, new_task)
-        
-#         st.success(f"✅ '{task_title}' assigned to {target_pet.name}!")
-#     else:
-#         st.warning("Please add a pet before assigning tasks.")
-
-# if st.session_state.tasks:
-#     st.write("Current tasks:")
-#     st.table(st.session_state.tasks)
-# else:
-#     st.info("No tasks yet. Add one above.")
-
-# st.divider()
-
-# st.subheader("Build Schedule")
-# st.caption("This button should call your scheduling logic once you implement it.")
-
-# if st.button("Generate schedule"):
-#     if not st.session_state.owner:
-#         st.error("❌ Please create an owner first!")
-#     elif not st.session_state.tasks:
-#         st.error("❌ Please add at least one task!")
-#     else:
-#         # Reset pets list so we don't double-count them on every click
-#         st.session_state.owner.pets = [] 
-        
-#         # Create one pet based on current UI inputs
-#         pet = Pet(name=pet_name, species=species)
-        
-#         # Convert the UI tasks to real Task objects
-#         for task_data in st.session_state.tasks:
-#             t = Task(
-#                 name=task_data["title"],
-#                 duration_minutes=task_data["duration_minutes"],
-#                 priority_level=task_data["priority"]
-#             )
-#             pet.tasks.append(t)
-        
-#         # Add the pet to the owner
-#         st.session_state.owner.pets.append(pet)
-        
-#         # Run the scheduler
-#         scheduler = Scheduler(st.session_state.owner)
-#         schedule = scheduler.generate_schedule()
-        
-#         st.success("✅ Schedule generated!")
-        
-#         # Use columns or a dataframe for a prettier display than raw JSON
-#         st.write(f"**Total Tasks Planned:** {schedule['tasks_count']}")
-#         st.write(f"**Time Used:** {schedule['total_time_used_minutes']} / {schedule['available_time_minutes']} min")
-#         st.table(schedule['tasks'])
-
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Scheduler
+from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="PawPal+ Smart Scheduler", page_icon="🐾", layout="wide")
 
 # --- SESSION STATE INITIALIZATION ---
-# This ensures our "Brain" (Owner/Scheduler) survives page refreshes
 if "owner" not in st.session_state:
     st.session_state.owner = None
 if "scheduler" not in st.session_state:
     st.session_state.scheduler = None
-if "tasks_ui_list" not in st.session_state:
-    st.session_state.tasks_ui_list = []
+if "tasks_added" not in st.session_state:
+    st.session_state.tasks_added = []
 
-st.title("🐾 PawPal+ Planning Assistant")
-
-st.markdown("""
-Welcome! Use this tool to plan a perfect day for your pets. 
-1. **Create an Owner** profile.
-2. **Register a Pet**.
-3. **Add Tasks** and let the AI optimize your schedule based on your time limit.
-""")
+st.title("🐾 PawPal+ - Smart Pet Care Scheduler")
+st.markdown("**Powered by Algorithmic Intelligence**: Weighted Greedy Sorting • Conflict Detection • Recurring Task Auto-Generation")
 
 # --- SECTION 1: OWNER & PET SETUP ---
 st.divider()
@@ -208,61 +51,229 @@ if st.session_state.owner:
 st.divider()
 st.subheader("📝 Step 2: Add Tasks")
 
-t_col1, t_col2, t_col3 = st.columns([2, 1, 1])
+t_col1, t_col2, t_col3, t_col4 = st.columns([2, 1, 1, 1])
 with t_col1:
     task_title = st.text_input("What needs to be done?", value="Morning Walk")
 with t_col2:
     duration = st.number_input("Mins", 5, 120, 20)
 with t_col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+with t_col4:
+    is_recurring = st.checkbox("Recurring?", value=False)
 
 if st.button("Add Task to List"):
     if st.session_state.owner and st.session_state.owner.pets:
-        # 1. Add to Backend Logic
         target_pet = st.session_state.owner.pets[0]
-        new_task = Task(name=task_title, duration_minutes=duration, priority_level=priority)
-        st.session_state.scheduler.add_task(target_pet, new_task)
+        # Set up recurring parameters if needed
+        frequency = "daily" if is_recurring else None
+        due_date = datetime.now().date() if frequency else None
+        start_time = datetime.now().time()
         
-        # 2. Add to UI List for the table display
-        st.session_state.tasks_ui_list.append({
+        new_task = Task(
+            name=task_title, 
+            duration_minutes=duration, 
+            priority_level=priority,
+            frequency=frequency,
+            start_time=start_time,
+            due_date=due_date,
+            is_recurring=is_recurring
+        )
+        st.session_state.scheduler.add_task(target_pet, new_task)
+        st.session_state.tasks_added.append({
             "Task": task_title, 
             "Mins": duration, 
-            "Priority": priority
+            "Priority": priority,
+            "Recurring": "✓" if is_recurring else "✗"
         })
         st.toast(f"Added {task_title}!")
     else:
         st.error("Please set up Owner and Pet first.")
 
-if st.session_state.tasks_ui_list:
-    st.table(st.session_state.tasks_ui_list)
-    if st.button("Clear All Tasks"):
-        st.session_state.tasks_ui_list = []
-        if st.session_state.owner and st.session_state.owner.pets:
-            st.session_state.owner.pets[0].tasks = []
-        st.rerun()
+if st.session_state.tasks_added:
+    st.markdown("**📋 Tasks Added:**")
+    # Create a nicer display with columns
+    import pandas as pd
+    df_tasks = pd.DataFrame(st.session_state.tasks_added)
+    st.dataframe(df_tasks, use_container_width=True, hide_index=True)
+    
+    col_clear, col_spacer = st.columns([1, 3])
+    with col_clear:
+        if st.button("🗑️ Clear All Tasks"):
+            st.session_state.tasks_added = []
+            if st.session_state.owner and st.session_state.owner.pets:
+                st.session_state.owner.pets[0].tasks = []
+            st.rerun()
 
-# --- SECTION 3: GENERATE SCHEDULE ---
+# --- SECTION 3: ALGORITHMIC ANALYSIS (ADVANCED) ---
 st.divider()
-st.subheader("📅 Step 3: Optimized Schedule")
+st.subheader("🧠 Step 3: Algorithmic Analysis")
 
-if st.button("Generate My Day", type="primary"):
-    if st.session_state.scheduler and st.session_state.tasks_ui_list:
-        # Run the Greedy Algorithm logic from Phase 2
+if st.session_state.scheduler and st.session_state.tasks_added:
+    with st.expander("📊 Advanced Analysis - Sorting & Optimization", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("#### 🎯 Weighted Greedy Sort")
+            st.caption("Tasks ranked by priority (HIGH→MEDIUM→LOW), with duration as tiebreaker")
+            if st.session_state.owner.pets:
+                target_pet = st.session_state.owner.pets[0]
+                sorted_tasks = st.session_state.scheduler.sort_tasks_by_priority()
+                sorted_tasks = [t for t in sorted_tasks if t in target_pet.tasks]
+                if sorted_tasks:
+                    sorted_display = []
+                    priority_colors = {
+                        "high": "🔴",
+                        "medium": "🟡", 
+                        "low": "🟢"
+                    }
+                    
+                    for idx, task in enumerate(sorted_tasks, 1):
+                        color_emoji = priority_colors.get(task.priority_level.lower(), "⚪")
+                        sorted_display.append({
+                            "Rank": f"{idx}",
+                            "Priority": f"{color_emoji} {task.priority_level.upper()}",
+                            "Task": task.name,
+                            "Duration": f"{task.duration_minutes} min"
+                        })
+                    
+                    import pandas as pd
+                    df_sorted = pd.DataFrame(sorted_display)
+                    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
+                    st.caption("🔍 **Legend:** 🔴 HIGH | 🟡 MEDIUM | 🟢 LOW")
+                else:
+                    st.info("No tasks to sort yet")
+        
+        with col2:
+            st.write("#### ⏰ Chronological Sort")
+            st.caption("Tasks ordered by due date and start time")
+            if st.session_state.owner.pets:
+                target_pet = st.session_state.owner.pets[0]
+                chrono_tasks = st.session_state.scheduler.sort_by_time(target_pet)
+                
+                if chrono_tasks:
+                    chrono_display = []
+                    for idx, task in enumerate(chrono_tasks, 1):
+                        time_str = task.start_time.strftime("%H:%M") if task.start_time else "Not set"
+                        date_str = str(task.due_date) if task.due_date else "No date"
+                        chrono_display.append({
+                            "Order": f"{idx}",
+                            "Time": time_str,
+                            "Date": date_str,
+                            "Task": task.name,
+                            "Duration": f"{task.duration_minutes} min"
+                        })
+                    
+                    import pandas as pd
+                    df_chrono = pd.DataFrame(chrono_display)
+                    st.dataframe(df_chrono, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No tasks to sort yet")
+    
+    # --- CONFLICT DETECTION ---
+    with st.expander("⚠️ Conflict Detection - Check for Overlapping Tasks", expanded=False):
+        st.write("#### Task Overlap Analysis")
+        st.caption("Conflicts occur when tasks are scheduled at the same time. Resolve them before generating your final schedule.")
+        
+        if st.session_state.owner.pets:
+            target_pet = st.session_state.owner.pets[0]
+            conflicts = st.session_state.scheduler.detect_conflicts_for_pet(target_pet)
+            
+            if conflicts:
+                st.error(f"🚨 **{len(conflicts)} CONFLICT(S) DETECTED!**")
+                st.markdown("---")
+                
+                for idx, conflict in enumerate(conflicts, 1):
+                    task1 = conflict['task1']
+                    task2 = conflict['task2']
+                    
+                    with st.container(border=True):
+                        col_icon, col_info = st.columns([0.5, 3])
+                        
+                        with col_icon:
+                            st.markdown("⏰")
+                        
+                        with col_info:
+                            st.write(f"**Conflict #{idx}**")
+                            st.markdown(f"**{task1.name}** ({task1.priority_level.upper()} - {task1.duration_minutes}min)")
+                            st.markdown(f"→ Overlaps with →")
+                            st.markdown(f"**{task2.name}** ({task2.priority_level.upper()} - {task2.duration_minutes}min)")
+                            
+                            # Show timing info
+                            st.caption("💡 **How to resolve:**")
+                            st.markdown("""
+                            - Change the start time of one task
+                            - Reduce duration to avoid overlap
+                            - Reschedule lower priority task for later
+                            - Split one task across multiple days
+                            """)
+            else:
+                st.success("✅ **No time conflicts!** All tasks can be scheduled without overlap.")
+
+# --- SECTION 4: GENERATE OPTIMIZED SCHEDULE ---
+st.divider()
+st.subheader("📅 Step 4: Generate Optimized Daily Schedule")
+
+if st.button("🚀 Generate My Perfect Day", type="primary"):
+    if st.session_state.scheduler and st.session_state.tasks_added:
         result = st.session_state.scheduler.generate_schedule()
         
-        st.success("Optimization Complete!")
+        st.success("✅ **Optimization Complete!**")
+        st.markdown("---")
         
-        # Metrics
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Tasks Scheduled", result['tasks_count'])
-        m2.metric("Total Time", f"{result['total_time_used_minutes']} min")
-        m3.metric("Remaining", f"{result['remaining_time_minutes']} min")
+        # Metrics Display with better styling
+        m1, m2, m3, m4 = st.columns(4)
         
-        # Final Table
+        with m1:
+            st.metric("📋 Tasks Scheduled", result['tasks_count'], delta=f"of {len(st.session_state.tasks_added)}")
+        
+        with m2:
+            time_used = result['total_time_used_minutes']
+            st.metric("⏱️ Time Used", f"{time_used} min", delta=f"{time_used}/{st.session_state.owner.daily_time_limit}")
+        
+        with m3:
+            remaining = result['remaining_time_minutes']
+            st.metric("⏳ Buffer Time", f"{remaining} min", delta="remaining" if remaining > 0 else "⚠️ tight")
+        
+        with m4:
+            efficiency = int((result['total_time_used_minutes'] / st.session_state.owner.daily_time_limit) * 100) if st.session_state.owner.daily_time_limit > 0 else 0
+            st.metric("📈 Efficiency", f"{efficiency}%", delta="optimal" if 80 <= efficiency <= 100 else "good" if efficiency >= 60 else "low")
+        
+        st.markdown("---")
+        
+        # Final Schedule Table
         if result['tasks']:
-            st.write("### Your Final Plan:")
-            st.table(result['tasks'])
+            st.write("### 📋 Your Final Optimized Plan:")
+            
+            import pandas as pd
+            schedule_display = []
+            cumulative_time = 0
+            
+            for idx, task in enumerate(result['tasks'], 1):
+                duration = task.get('duration_minutes', 0)
+                priority = task.get('priority_level', 'N/A').lower()
+                
+                # Add emoji based on priority
+                priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(priority, "⚪")
+                
+                schedule_display.append({
+                    "Order": f"{idx}",
+                    "Task": task.get('name', 'Unknown'),
+                    "Priority": f"{priority_emoji} {priority.upper()}",
+                    "Duration": f"{duration} min",
+                    "Time Slot": f"{cumulative_time}-{cumulative_time + duration} min"
+                })
+                cumulative_time += duration
+            
+            df_schedule = pd.DataFrame(schedule_display)
+            st.dataframe(df_schedule, use_container_width=True, hide_index=True)
+            
+            # Summary insights
+            st.info(f"""
+            💡 **Smart Scheduling Insights:**
+            - **Algorithm Used:** Weighted Greedy Sort (maximizes task completion)
+            - **Time Utilization:** {efficiency}% of your {st.session_state.owner.daily_time_limit}-minute day
+            - **All prioritized tasks fit?** {"✅ Yes" if efficiency >= 80 else "⚠️ Some lower priority tasks skipped"}
+            """)
         else:
-            st.warning("No tasks fit within your time limit!")
-    else:
-        st.warning("Please add an owner, pet, and tasks first.")
+            st.warning("⚠️ **No tasks fit within your time limit!**")
+            st.info("✏️ **Suggestion:** Reduce task durations, extend your daily limit, or remove lower-priority tasks.")

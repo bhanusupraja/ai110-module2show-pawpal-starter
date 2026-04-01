@@ -22,15 +22,123 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
-## Smarter Scheduling Features
+## Features
 
-PawPal+ includes advanced algorithmic features for intelligent task scheduling:
+### 🎯 **Sorting & Prioritization Algorithms**
 
-- **Weighted Greedy Sorting** (O(n log n)): Prioritizes high-priority tasks first, then sorts by duration within each priority level to maximize task completion within time constraints.
-- **Multi-Criteria Filtering**: Filter tasks by pet name, completion status, and priority level to view exactly what you need.
-- **Recurring Task Auto-Generation**: Daily and weekly tasks automatically generate next occurrences with calculated due dates using Python's `timedelta`.
-- **Conflict Detection** (O(n²)): Detects overlapping time slots both within a pet's schedule (same-pet) and across multiple pets (cross-pet) using O(1) interval overlap detection.
-- **Lightweight Warning System**: Identifies scheduling conflicts and returns clear warning messages without blocking task addition, enabling non-disruptive conflict awareness.
+1. **Weighted Greedy Sorter** `O(n log n)`
+   - Sorts tasks by priority (HIGH → MEDIUM → LOW)
+   - Uses duration as secondary sort key to maximize task completion within time limits
+   - Ideal for daily schedule optimization: fits more high-priority tasks in limited time
+
+2. **Chronological Sorter** `O(n log n)`
+   - Arranges tasks by start time for sequential planning
+   - Respects time-of-day constraints (e.g., morning walks vs. evening training)
+
+3. **Multi-Level Sorter** `O(n log n)`
+   - Combines chronological order with priority ranking
+   - Primary: start_time | Secondary: priority_level
+   - Use case: "Show me today's tasks in order, with high-priority tasks highlighted"
+
+---
+
+### 🔍 **Filtering & Search Algorithms**
+
+4. **Multi-Criteria Filter** `O(n)` where n = total tasks
+   - Filters by any combination of:
+     - Pet name (case-insensitive)
+     - Completion status (pending/completed)
+     - Priority level (high/medium/low)
+   - Returns only tasks matching ALL criteria
+   - Examples: "All pending HIGH-priority tasks for Mochi"
+
+5. **Smart Duplication Guard** `O(k)` where k = pet's existing tasks
+   - Prevents duplicate task entries based on:
+     - Task name (case-insensitive)
+     - Due date (allows same name on different dates)
+     - Completion status (allows multiple complete versions)
+   - Enables recurring tasks with same name but different due dates
+
+---
+
+### ⏰ **Conflict Detection Algorithms**
+
+6. **Interval Overlap Detection** `O(1)` constant time
+   - Mathematical formula: `end₁ > start₂ AND end₂ > start₁`
+   - Detects overlapping time intervals without sorting
+   - Handles edge cases: zero-duration tasks, touching boundaries, nested intervals
+
+7. **Same-Pet Conflict Detection** `O(k²)` where k = pet's tasks
+   - Pairwise comparison of all tasks for a single pet
+   - Uses O(1) overlap detection for each pair
+   - Example: "Mochi's morning walk (09:00) conflicts with playtime (09:15)"
+
+8. **Cross-Pet Conflict Detection** `O(p × k² + n²)` where p = pets, n = total tasks
+   - Two-phase algorithm:
+     - Phase 1: Detect same-pet conflicts for each pet
+     - Phase 2: Compare tasks across different pets
+   - Use case: Multi-pet household scheduling conflicts
+
+9. **Lightweight Conflict Warning System** `O(k)` per operation
+   - Non-blocking soft warnings (doesn't prevent task addition)
+   - Returns warning messages instead of exceptions
+   - Integrates seamlessly with UI for user-friendly alerts
+   - Example: User adds conflicting task, gets warning but task is added anyway
+
+---
+
+### 📅 **Recurring Task Management**
+
+10. **Recurring Task Auto-Generator** `O(1)` constant time
+    - Uses Python's `timedelta` for date arithmetic
+    - Supports frequencies: daily (+1 day), weekly (+7 days), once (no recurrence)
+    - Calculates next occurrence due date from current due date
+    - Automatic next occurrence creation when task is marked complete
+    - Example: "Daily medication on 2026-04-01 → auto-creates 2026-04-02"
+
+    **Time Calculation Logic:**
+    ```
+    daily_task: due_date + timedelta(days=1)
+    weekly_task: due_date + timedelta(days=7)
+    one_time: due_date (unchanged)
+    ```
+
+---
+
+### 📊 **Schedule Generation Algorithm**
+
+11. **Greedy Schedule Generator** `O(n log n)` where n = total tasks
+    - Algorithm Steps:
+      1. Sort tasks by Weighted Greedy (priority + duration)
+      2. Iterate through sorted tasks in order
+      3. Add task if it fits within remaining time
+      4. Stop when time is exhausted or all tasks processed
+    - Guarantees: Maximum number of high-priority tasks within time limit
+    - Metrics: Tasks scheduled, time used, efficiency %, buffer remaining
+
+    **Example Usage (120 min available):**
+    ```
+    Tasks: HIGH(50min), HIGH(30min), MEDIUM(40min), LOW(20min)
+    Result: HIGH(50) + HIGH(30) = 80 min ✓ fits!
+    MEDIUM(40) would exceed, so skipped ✓
+    Total: 2 tasks, 80 min used, 40 min buffer
+    ```
+
+---
+
+### 🎨 **UI/UX Features**
+
+12. **Professional Data Visualization**
+    - Color-coded priority indicators (🔴 HIGH | 🟡 MEDIUM | 🟢 LOW)
+    - Tabular display with pandas DataFrames for clean formatting
+    - Collapsible sections for advanced analysis
+    - Real-time efficiency metrics and optimization insights
+
+13. **Actionable Conflict Reporting**
+    - Visual conflict cards with emoji indicators (⏰)
+    - Shows which tasks conflict and when
+    - Provides 4 resolution suggestions to pet owner
+    - Non-intrusive (warnings shown in expandable sections)
 
 ## Getting started
 
@@ -42,7 +150,86 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Suggested workflow
+### Start the App
+
+```bash
+streamlit run app.py
+```
+
+The app will open at `http://localhost:8501`
+
+---
+
+## How It Works: Algorithm Pipeline
+
+### User Flow & Algorithmic Execution
+
+1. **User creates Owner & Pet** → System initializes Owner with daily time limit and creates Pet container
+
+2. **User adds Tasks** → System applies Smart Duplication Guard (O(k)) to prevent duplicate entries
+
+3. **User views Tasks** → System applies Multi-Criteria Filter (O(n)) to show only relevant tasks
+
+4. **User sorts for analysis** → System offers two primary sorts:
+   - **Weighted Greedy**: HIGH priority + short duration tasks bubble to top
+   - **Chronological**: Tasks arranged by start time for timeline view
+
+5. **Conflict Check** → System runs Conflict Detection (O(k²)) to find overlapping times and displays Lightweight Warnings
+
+6. **Generate Schedule** → System executes Greedy Schedule Generator (O(n log n)):
+   - Sorts all tasks by Weighted Greedy
+   - Greedily fits tasks within time limit
+   - Returns optimized daily plan with efficiency metrics
+
+7. **Recurring Tasks** → When task marked complete, system auto-creates next occurrence using Recurring Task Generator (O(1)) with timedelta arithmetic
+
+### Example: Daily Schedule for Mochi
+
+```
+Owner: Bhanu | Available: 120 minutes | Pet: Mochi
+
+TASKS ADDED:
+  Morning Walk (30 min, HIGH)     09:00 start
+  Play Session (45 min, MEDIUM)   14:00 start
+  Grooming (40 min, LOW)          15:00 start
+  Feeding (15 min, HIGH)          08:00 start
+
+CONFLICT CHECK:
+  ✅ No conflicts: All tasks fit without overlap
+
+WEIGHTED GREEDY SORT:
+  1. Feeding (15 min, HIGH)       [priority 3, short duration]
+  2. Morning Walk (30 min, HIGH)  [priority 3, longer duration]
+  3. Play Session (45 min, MED)   [priority 2]
+  (Grooming skipped - would exceed 120 min)
+
+FINAL SCHEDULE (Generated in 120 min):
+  ✓ Feeding (8:00) - 15 min
+  ✓ Morning Walk (9:00) - 30 min
+  ✓ Play Session (14:00) - 45 min
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━ 90 min used | 30 min buffer | 75% efficiency
+```
+
+---
+
+### Local Testing & Development
+
+From VS Code terminal or command line:
+
+```bash
+# Run all tests (shows pass ✅ / fail ❌)
+python -m pytest
+
+# Run with verbose output (see each test name)
+python -m pytest -v
+
+# Run one specific test
+python -m pytest tests/test_pawpal.py::test_weighted_greedy_sort -v
+```
+
+---
+
+## Suggested workflow
 
 1. Read the scenario carefully and identify requirements and edge cases.
 2. Draft a UML diagram (classes, attributes, methods, relationships).

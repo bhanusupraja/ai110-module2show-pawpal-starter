@@ -1,0 +1,47 @@
+classDiagram
+    class Pet {
+        - name: str
+        - species: str
+        - tasks: List[Task]
+        + get_summary() str
+    }
+
+    class Task {
+        - name: str
+        - duration_minutes: int
+        - priority_level: str
+        - frequency: str
+        - is_completed: bool
+        - is_recurring: bool
+        - start_time: str
+        - due_date: str
+        + get_priority_rank() int
+        + mark_complete() void
+        + create_next_occurrence() Task
+    }
+
+    class Owner {
+        - name: str
+        - daily_time_limit: int
+        - pets: List[Pet]
+        + update_time_constraint(minutes: int) void
+        + get_available_time() int
+        + get_all_tasks() List[Task]
+    }
+
+    class Scheduler {
+        - owner: Owner
+        + add_task(pet: Pet, task: Task) bool
+        + filter_tasks(...) List[Task]
+        + sort_by_time() List[Task]
+        + sort_tasks_by_priority() List[Task]
+        + detect_conflicts_for_pet(pet: Pet) list
+        + detect_all_conflicts() dict
+        + generate_schedule() dict
+        + mark_task_complete_with_recurrence(pet: Pet, task: Task) Task
+        + check_time_fit(tasks: List[Task]) bool
+    }
+
+    Owner --> Pet : "has many"
+    Pet --> Task : "contains many"
+    Scheduler --> Owner : "orchestrates for"

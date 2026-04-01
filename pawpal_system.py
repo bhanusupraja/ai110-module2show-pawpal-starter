@@ -844,7 +844,7 @@ class Scheduler:
             key=lambda task: (task.start_time, -task.get_priority_rank())
         )
     
-    def sort_tasks_by_priority(self) -> List[Task]:
+    def sort_tasks_by_priority(self,pet:Pet =None) -> List[Task]:
         """Sort tasks by priority (high→med→low), then by duration (short→long). 
         
         ALGORITHM: Weighted Greedy Sorter
@@ -857,7 +857,7 @@ class Scheduler:
         ✓ High(15min) + High(10min) + High(20min) = 45min ✓ All fit!
         ✗ Without greedy: High(50min) would consume most time
         """
-        tasks = self.get_all_tasks()
+        tasks = pet.tasks if pet else self.get_all_tasks()
         # Primary: priority rank (descending, so high=3 comes first)
         # Secondary: duration (ascending, so shorter tasks come first)
         return sorted(
