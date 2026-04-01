@@ -181,15 +181,23 @@ class Scheduler:
     def add_task(self, pet: Pet, task: Task) -> bool:
         """Add task to pet. Return False if duplicate exists.
         
-        FEATURE: Conflict Detection (Duplication Guard)
-        - Prevents identical task names for same pet
+        FEATURE: Smart Duplication Guard
+        - Prevents identical task names ONLY if both have same due_date or both incomplete without dates
         - Case-insensitive comparison
+        - Allows recurring tasks with same name but different due_dates
         - Time Complexity: O(k) where k = pet's existing tasks
         """
-        # Check for duplicate: (pet_name, task_name)
+        # Check for duplicate: (pet_name, task_name, due_date)
         for existing_task in pet.tasks:
             if existing_task.name.lower() == task.name.lower():
-                return False  # Duplicate found
+                # Only consider it a duplicate if:
+                # 1. Both have same due_date (or both missing), AND
+                # 2. The existing task is incomplete (allow multiple complete versions)
+                same_due_date = existing_task.due_date == task.due_date
+                existing_is_incomplete = not existing_task.is_completed
+                
+                if same_due_date and existing_is_incomplete:
+                    return False  # Duplicate found
         
         pet.tasks.append(task)
         return True
@@ -425,6 +433,39 @@ class Scheduler:
         # Returns tasks sorted by time in chronological order
         return sorted(tasks, key=lambda task: task.start_time)
     
+    def detect_conflicts_for_pet(self, pet: Pet) -> list:
+        """Detect all time conflicts within a single pet's task list.
+        
+        ALGORITHM: Same-Pet Conflict Detection
+        TIME COMPLEXITY: O(k²) where k = pet's tasks
+        - Compares each pair of tasks for the pet
+        - Uses O(1) interval overlap detection for each pair
+        
+        Args:
+            pet (Pet): Pet whose tasks to check for conflicts
+            
+        Returns:
+            list: List of (task1, task2) tuples representing conflicting task pairs
+            
+        USAGE:
+        conflicts = scheduler.detect_conflicts_for_pet(mochi)
+        for task1, task2 in conflicts:
+            print(f"{task1.name} at {task1.start_time} conflicts with {task2.name}")
+        """
+        conflicts = []
+        tasks = pet.tasks
+        
+        # Compare each pair of tasks
+        for i in range(len(tasks)):
+            for j in range(i + 1, len(tasks)):
+                task1, task2 = tasks[i], tasks[j]
+                
+                # Check if they overlap in time
+                if self._check_time_overlap(task1, task2):
+                    conflicts.append((task1, task2))
+        
+        return conflicts
+    
     def _time_to_minutes(self, time_str: str) -> int:
         """Convert time string "HH:MM" to minutes since midnight.
         
@@ -482,19 +523,6 @@ class Scheduler:
         - e2 ≤ s1: Second interval ends before/at first start → No overlap
         - Otherwise: Intervals overlap
         
-        PSEUDOCODE:
-        ___________
-        function check_overlap(task1, task2):
-            if not task1.start_time or not task2.start_time:
-                return false  // Can't check with missing times
-            
-            start1 ← to_minutes(task1.start_time)
-            end1 ← start1 + task1.duration_minutes
-            start2 ← to_minutes(task2.start_time)
-            end2 ← start2 + task2.duration_minutes
-            
-            return (end1 > start2) AND (end2 > start1)
-        
         TIME EXAMPLES:
         ______________
         Task A: 09:00 (540 min) for 30 min → ends at 09:30 (570 min)
@@ -505,7 +533,7 @@ class Scheduler:
         Task C: 10:00 (600 min) for 30 min → ends at 10:30 (630 min)
         Task D: 10:30 (630 min) for 20 min → ends at 10:50 (650 min)
         
-        Check: 630 > 630 AND 650 > 600 → FALSE (both parts false) ✓ NO OVERLAP
+        Check: 630 > 630 AND 650 > 600 → FALSE (no overlap) ✓ NO OVERLAP
         
         EDGE CASES:
         ___________
@@ -514,170 +542,21 @@ class Scheduler:
         3. One task inside another: Correctly detected
         4. Tasks in reverse order: Works regardless of input order
         5. Missing start_time: Returns FALSE (safe default)
-        
-        VISUAL DIAGRAM:
-        _______________
-        Overlapping:
-        Task 1: |-------|
-        Task 2:      |-------|
-                 ^overlap^
-        ALGORITHM: Nested Conflict Detection (Two-Phase Sweep)
-        =======================================================
-        
-        PURPOSE:
-        Comprehensively identify scheduling conflicts at both pet-level and system-level.
-        
-        ALGORITHM TYPE: Pairwise Comparison (Brute Force Optimization)
-        - Phase 1: Per-pet pairwise comparison
-        - Phase 2: Cross-pet pairwise comparison
-        - Uses: O(1) interval overlap detection
-        
-        TIME COMPLEXITY: O(p × k² + n²)
-        where:
-            p = number of pets
-            k = average tasks per pet
-            n = total tasks across all pets
-        
-        Detailed breakdown:
-        - Phase 1: p pets × (k tasks each) × (k-1)/2 comparisons = O(p × k²)
-        - Phase 2: n × (n-1)/2 pairwise comparisons = O(n²)
-        - Pet lookup check: O(1) per pair
-        - Total: O(p × k² + n²)
-        
-        SPACE COMPLEXITY: O(c + n)
-        where c = number of conflicts, n = total tasks
-        - Stores conflict tuples in two lists
-        - Stores task list and pet_lookup dictionary
-        
-        PRACTICAL PERFORMANCE:
-        With typical pet owner (2-5 pets, 10-20 tasks each):
-        - p × k² = 5 × 20² = 2,000 comparisons
-        - n² = 100² = 10,000 comparisons
-        - Total: ~12,000 operations → < 1ms on modern hardware
-        
-        PSEUDOCODE:
-        ___________
-        function detect_all_conflicts():
-            same_pet_conflicts ← []
-            different_pet_conflicts ← []
-            
-            // PHASE 1: Detect same-pet conflicts
-            for each pet in owner.pets:
-                pet_conflicts ← detect_conflicts_for_pet(pet)
-                for each (task1, task2) in pet_conflicts:
-                    append (pet.name, task1.name, task2.name, ...) to same_pet_conflicts
-            
-            // PHASE 2: Build task-to-pet mapping
-            all_tasks ← []
-            pet_lookup ← {}
-            for each pet in owner.pets:
-                for each task in pet.tasks:
-                    append task to all_tasks
-                    pet_lookup[task_id] ← pet.name
-            
-            // PHASE 3: Detect cross-pet conflicts
-            for i = 0 to len(all_tasks) - 1:
-                for j = i + 1 to len(all_tasks) - 1:
-                    task1 ← all_tasks[i]
-                    task2 ← all_tasks[j]
-                    pet1 ← pet_lookup[task1_id]
-                    pet2 ← pet_lookup[task2_id]
-                    
-                    if pet1 ≠ pet2 AND check_overlap(task1, task2):
-                        append (pet1, task1.name, pet2, task2.name, ...) to cross_pet_conflicts
-            
-            return {conflicts, total_count, has_conflicts}
-        
-        ALGORITHM RATIONALE:
-        ____________________
-        Why two-phase approach?
-        1. Same-pet conflicts (Phase 1): O(p × k²)
-           - Must compare every task pair within each pet
-           - k is typically small → fast
-        
-        2. Cross-pet conflicts (Phase 3): O(n²)
-           - Must compare across all pets to ensure no missed conflicts
-           - Necessary for owner's full schedule validation
-        
-        Why not optimize Phase 3?
-        - Early termination: If pet1 == pet2, skip (already checked in Phase 1)
-        - Avoid redundant comparisons: j starts at i+1
-        - Hash-free lookup: Using id() mapping for O(1) pet association
-        
-        EXAMPLES:
-        _________
-        Two pets, three tasks each:
-        
-        Owner: "Bhanu"
-        - Mochi (Dog):
-          - Task A: 09:00-09:30
-          - Task B: 09:15-09:35  ← CONFLICT with A (same-pet)
-          - Task C: 14:00-14:20
-        - Fluffy (Cat):
-          - Task D: 09:20-09:50  ← CONFLICT with A & B
-          - Task E: 10:00-10:15
-          - Task F: 14:10-14:30  ← CONFLICT with C
-        
-        Result:
-        same_pet_conflicts:
-        - ("Mochi", "Task A", "Task B", "09:00", "09:15")
-        
-        different_pet_conflicts:
-        - ("Mochi", "Task A", "Fluffy", "Task D", "09:00", "09:20")
-        - ("Mochi", "Task B", "Fluffy", "Task D", "09:15", "09:20")
-        - ("Mochi", "Task C", "Fluffy", "Task F", "14:00", "14:10")
-        
-        RETURNS:
-        dict with keys:
-        - "same_pet_conflicts": List of (pet_name, task1_name, task2_name, time1, time2)
-        - "different_pet_conflicts": List of (pet1, task1, pet2, task2, time1, time2)
-        - "total_conflicts": Integer count of all conflicts
-        - "has_conflicts": Boolean flag for quick checking
-        
-        OPTIMIZATION NOTES:
-        ___________________
-        1. Cache results if called multiple times
-        2. Early termination: Return immediately if no pets
-        3. Lazy evaluation: Return generator for large pet lists
-        4. Parallelization: Phase 1 can run per-pet in parallel
         """
-        same_pet = []
-        diff_pet = []
+        # Safety check: must have start times
+        if not task1.start_time or not task2.start_time:
+            return False
         
-        # Check conflicts within each pet
-        for pet in self.owner.pets:
-            pet_conflicts = self.detect_conflicts_for_pet(pet)
-            for task1, task2 in pet_conflicts:
-                same_pet.append((pet.name, task1.name, task2.name, 
-                                task1.start_time, task2.start_time))
+        # Convert start times to minutes
+        start1 = self._time_to_minutes(task1.start_time)
+        start2 = self._time_to_minutes(task2.start_time)
         
-        # Check conflicts between different pets
-        all_tasks = []
-        pet_lookup = {}  # Map task to pet for lookup
+        # Calculate end times
+        end1 = start1 + task1.duration_minutes
+        end2 = start2 + task2.duration_minutes
         
-        for pet in self.owner.pets:
-            for task in pet.tasks:
-                all_tasks.append(task)
-                pet_lookup[id(task)] = pet.name
-        
-        # Compare tasks across pets
-        for i in range(len(all_tasks)):
-            for j in range(i + 1, len(all_tasks)):
-                task1, task2 = all_tasks[i], all_tasks[j]
-                pet1, pet2 = pet_lookup[id(task1)], pet_lookup[id(task2)]
-                
-                # Only check if different pets
-                if pet1 != pet2 and self._check_time_overlap(task1, task2):
-                    diff_pet.append((pet1, task1.name, pet2, task2.name,
-                                    task1.start_time, task2.start_time))
-        
-        total = len(same_pet) + len(diff_pet)
-        return {
-            "same_pet_conflicts": same_pet,
-            "different_pet_conflicts": diff_pet,
-            "total_conflicts": total,
-            "has_conflicts": total > 0
-        }
+        # Check overlap: end1 > start2 AND end2 > start1
+        return end1 > start2 and end2 > start1
     
     def detect_all_conflicts(self) -> dict:
         """Detect ALL time conflicts across all pets (same pet AND different pets).
