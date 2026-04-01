@@ -40,6 +40,13 @@ Actions it performs (Methods): This is the brain of the app. It sorts the tasks 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 - I updated the initial design to include a direct relationship between the Pet and the Owner. This ensures that the system recognizes each pet as belonging to a specific owner, which is necessary for keeping care tasks and time constraints organized correctly for each user.
+- After reviewing my initial "skeleton" code with AI, I made two significant changes to improve the system:
+
+Added a Pets List to the Owner: My initial code only had the Scheduler looking at one pet at a time. The AI pointed out that in the real world, an owner often has multiple pets. I updated the Owner class to include a pets list. This makes the design more realistic and allows the system to scale if I want to support multiple animals later.
+
+Consolidated Priority Logic: I originally had two separate methods to check priority (is_high_priority and get_priority_rank). The AI noted this was redundant. I removed the simple "True/False" check and kept the numeric ranking (3 for high, 2 for medium, 1 for low). This change made the code cleaner and made it much easier for the Scheduler to mathematically sort the tasks.
+
+Added a Duration Helper: I added a private helper method to the Scheduler to calculate the total duration of a list of tasks. This prevents the "bottleneck" of repeating the same math in different parts of the code.
 
 ---
 
@@ -54,6 +61,7 @@ Actions it performs (Methods): This is the brain of the app. It sorts the tasks 
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
+- I verified my implementation by creating a main.py demo script. I tested the system with an Owner limited to 60 minutes and three tasks totaling 90 minutes. The Scheduler successfully prioritized the 'High' and 'Medium' tasks and automatically excluded the 'Low' priority task that exceeded the time limit. This confirmed that my Greedy Algorithm and time-fit logic are working as intended.
 
 ---
 
