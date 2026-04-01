@@ -22,6 +22,16 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Smarter Scheduling Features
+
+PawPal+ includes advanced algorithmic features for intelligent task scheduling:
+
+- **Weighted Greedy Sorting** (O(n log n)): Prioritizes high-priority tasks first, then sorts by duration within each priority level to maximize task completion within time constraints.
+- **Multi-Criteria Filtering**: Filter tasks by pet name, completion status, and priority level to view exactly what you need.
+- **Recurring Task Auto-Generation**: Daily and weekly tasks automatically generate next occurrences with calculated due dates using Python's `timedelta`.
+- **Conflict Detection** (O(n²)): Detects overlapping time slots both within a pet's schedule (same-pet) and across multiple pets (cross-pet) using O(1) interval overlap detection.
+- **Lightweight Warning System**: Identifies scheduling conflicts and returns clear warning messages without blocking task addition, enabling non-disruptive conflict awareness.
+
 ## Getting started
 
 ### Setup

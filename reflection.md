@@ -62,6 +62,15 @@ Added a Duration Helper: I added a private helper method to the Scheduler to cal
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 - I verified my implementation by creating a main.py demo script. I tested the system with an Owner limited to 60 minutes and three tasks totaling 90 minutes. The Scheduler successfully prioritized the 'High' and 'Medium' tasks and automatically excluded the 'Low' priority task that exceeded the time limit. This confirmed that my Greedy Algorithm and time-fit logic are working as intended.
+-- Selected Tradeoff: Non-Blocking "Soft" Warnings vs. Strict Conflict Prevention.
+
+Description: In the check_task_conflict_on_add method, the scheduler identifies overlapping task times but returns a warning string instead of preventing the user from adding the task.
+
+Why I chose this: > * User Autonomy: Pet care is often fluid. A user might want to start a 30-minute "Grooming" session while a "Self-Feeder" task is technically still running.
+
+Complexity: Blocking conflicts would require a complex "Resolution UI" where the user has to pick which task to delete or move.
+
+The Downside: The responsibility falls on the user to manually resolve the overlap. If they ignore the warning, the "Daily Schedule" will technically be mathematically impossible to complete within the allotted human hours.
 
 ---
 
