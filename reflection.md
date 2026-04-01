@@ -1,16 +1,45 @@
 # PawPal+ Project Reflection
 
 ## 1. System Design
+- The first core action is setting up a pet profile where the user introduces their pet by entering a name and species so the app knows exactly who it is making a schedule for.
+
+- The second action is making a care to-do list where the user types in tasks like feeding walking or grooming and tells the app how long each task takes and how important it is.
+
+- The third action is getting an automatic daily plan where the user hits a button to let the app organize the day by looking at the list and deciding what to do first to make sure the most important tasks fit the schedule.
 
 **a. Initial design**
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+ - 1.a Initial Design
+ -- I am designing a pet care app using four main classes to handle the scheduling and data. Each class has a specific job to make sure the pet's needs are met efficiently.
+
+1. Pet Class
+Information it holds (Attributes): The pet's name (like Mochi) and their species (dog, cat, etc.).
+
+Actions it performs (Methods): It can provide a summary of the pet’s identity to be used in the final schedule.
+
+2. Owner Class
+Information it holds (Attributes): The owner's name and their specific preferences (for example, how much total time they have available for pet care today).
+
+Actions it performs (Methods): It stores and updates the daily time constraints that the scheduler must follow.
+
+3. Task Class
+Information it holds (Attributes): The name of the activity (like "Feeding"), how long it takes in minutes, and its priority level (high, medium, or low).
+
+Actions it performs (Methods): It can check its own priority level to tell the scheduler if it is a "must-do" task.
+
+4. Scheduler Class
+Information it holds (Attributes): A list of all the tasks that have been added for the day.
+
+Actions it performs (Methods): This is the brain of the app. It sorts the tasks by priority, adds up the minutes to make sure they fit the owner's time limit, and generates the final ordered plan.
+
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+- I updated the initial design to include a direct relationship between the Pet and the Owner. This ensures that the system recognizes each pet as belonging to a specific owner, which is necessary for keeping care tasks and time constraints organized correctly for each user.
 
 ---
 
@@ -34,6 +63,7 @@
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
 - What kinds of prompts or questions were most helpful?
+- I used AI to translate my UML diagram into a Python code skeleton. I specifically prompted the AI to use Python Dataclasses for the Pet and Task objects to keep the data structure clean and organized. This allowed me to establish the system's architecture with correct type hints and method stubs before focusing on the complex scheduling logic.
 
 **b. Judgment and verification**
 
